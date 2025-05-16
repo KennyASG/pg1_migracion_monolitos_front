@@ -1,15 +1,16 @@
-// src/App.jsx
 import Navbar from "./components/Navbar";
+import Sidebar from "./components/Sidebar";
 import Home from "./pages/Home";
-import Sidebar from "./components/Sidebar.jsx";
 
 function App() {
     return (
-        <div className="flex">
+        <div className="flex h-screen bg-slate-50">
             <Sidebar />
-            <div className="min-h-screen bg-gray-100">
+            <div className="flex flex-col flex-1">
                 <Navbar />
-                <Home />
+                <main className="p-6 overflow-y-auto flex-1">
+                    <Home />
+                </main>
             </div>
         </div>
     );

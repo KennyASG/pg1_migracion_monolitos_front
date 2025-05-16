@@ -1,11 +1,11 @@
-// src/components/Navbar.jsx
+import { LayoutDashboard } from "lucide-react";
+
 const Navbar = () => {
     return (
-        <nav className="bg-slate-800 text-white p-4 shadow-md fixed top-0 left-0 right-0 z-50">
-            <div className="max-w-7xl mx-auto flex justify-between items-center">
-                <h1 className="text-2xl font-semibold tracking-wide">Microservicio Visualizer</h1>
-            </div>
-        </nav>
+        <header className="bg-slate-700 text-white px-6 py-4 shadow-md flex items-center gap-4">
+            <LayoutDashboard size={28} />
+            <h1 className="text-xl font-semibold">Visualizador de Microservicios</h1>
+        </header>
     );
 };
 
