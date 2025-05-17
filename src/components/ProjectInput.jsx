@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 
-const ProjectInput = ({ projectName, setProjectName }) => {
+const ProjectInput = ({ projectName, setProjectName, onSuccess }) => {
     const fileInputRef = useRef();
     const [selectedFile, setSelectedFile] = useState(null);
 
@@ -31,6 +31,7 @@ const ProjectInput = ({ projectName, setProjectName }) => {
 
             const result = await response.json();
             alert("✅ Subido: " + result.message);
+            if (onSuccess) onSuccess();
         } catch (error) {
             console.error("❌ Error al subir el archivo:", error);
             alert("Ocurrió un error al subir el archivo.");
