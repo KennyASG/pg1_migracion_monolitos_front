@@ -1,4 +1,3 @@
-// components/TablaDependencias.jsx
 import { useEffect, useState, useMemo } from "react";
 
 const TablaDependencias = ({ proyecto, onSeleccionarCandidato }) => {
@@ -39,7 +38,7 @@ const TablaDependencias = ({ proyecto, onSeleccionarCandidato }) => {
         return 'Otros';
     };
 
-    // Procesar dependencias para añadir información útil
+    // Procesar dependencias para añadir información
     const dependenciasProcesadas = useMemo(() => {
         return dependencias.map(dep => ({
             ...dep,
@@ -120,7 +119,7 @@ const TablaDependencias = ({ proyecto, onSeleccionarCandidato }) => {
 
     // Filtrar dependencias
     const dependenciasFiltradas = useMemo(() => {
-        // Si hay un módulo seleccionado, mostrar solo sus dependencias
+
         if (moduloSeleccionado) {
             const modulo = modulos.find(m => m.nombre === moduloSeleccionado);
             if (modulo) {
@@ -191,15 +190,12 @@ const TablaDependencias = ({ proyecto, onSeleccionarCandidato }) => {
         const modulosSeleccionados = modulos.filter(m =>
             candidatosSeleccionados.includes(m.nombre)
         );
-
-        // Aquí puedes implementar la lógica de exportación
-        // Por ahora solo llamamos al callback
         if (onSeleccionarCandidato && modulosSeleccionados.length > 0) {
             onSeleccionarCandidato(modulosSeleccionados);
         }
     };
 
-    // Opciones de filtro
+
     const tipos = ["Todos", "Controller", "Service", "Repository", "Model", "Interface", "Otros"];
 
     const renderChip = (tipo) => {
@@ -369,7 +365,7 @@ const TablaDependencias = ({ proyecto, onSeleccionarCandidato }) => {
                                         <button
                                             onClick={() => {
                                                 setModuloSeleccionado(modulo.nombre);
-                                                setVistaAgrupada(false); // Esta línea es la clave
+                                                setVistaAgrupada(false);
                                             }}
                                             className="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded border border-blue-200 hover:bg-blue-100"
                                         >
