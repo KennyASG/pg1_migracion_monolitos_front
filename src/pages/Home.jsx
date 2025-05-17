@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import ProjectInput from "../components/ProjectInput";
 import TablaDependencias from "../components/TablaDependencias";
+import {Box} from "lucide-react";
 
 const Home = ({
                   projectName,
@@ -30,7 +31,8 @@ const Home = ({
         <div className="px-6 pb-10 bg-gray-100 min-h-screen w-full">
             {showWelcome && (
                 <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-6 mb-6 text-indigo-800">
-                    <h1 className="text-2xl font-bold mb-2">Bienvenido a MicroVisor 🧩</h1>
+
+                    <span className="flex"><h1 className="text-2xl font-bold mb-2"> Bienvenido a la herramienta de migración </h1> <Box size={30} className="ml-3" /> </span>
                     <p className="mb-3">
                         Esta herramienta te ayudará a migrar tus aplicaciones monolíticas a una
                         arquitectura de microservicios mediante un análisis automatizado.
