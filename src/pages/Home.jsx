@@ -1,5 +1,5 @@
 import ProjectInput from "../components/ProjectInput";
-import GraphContainer from "../components/GraphContainer";
+import TablaDependencias from "../components/TablaDependencias";
 import { useState } from "react";
 
 const Home = () => {
@@ -15,7 +15,7 @@ const Home = () => {
                     setProjectName={setProjectName}
                     onSuccess={() => setProyectoProcesado(projectName)}
                 />
-                {proyectoProcesado && <GraphContainer proyecto={proyectoProcesado} />}
+                {proyectoProcesado && <TablaDependencias proyecto={proyectoProcesado} />}
             </div>
         </div>
     );

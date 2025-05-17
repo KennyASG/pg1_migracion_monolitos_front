@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import ForceGraph2D from "react-force-graph-2d";
+import { forceManyBody, forceX, forceY, forceCollide } from "d3-force";
 
 const GraphContainer = ({ proyecto, onSelectNode }) => {
     const [grafo, setGrafo] = useState(null);
@@ -9,6 +10,7 @@ const GraphContainer = ({ proyecto, onSelectNode }) => {
     const [modulosCandidatos, setModulosCandidatos] = useState([]);
     const graphRef = useRef();
 
+    // 1) Fetch + build
     useEffect(() => {
         if (!proyecto) return;
 
@@ -18,59 +20,47 @@ const GraphContainer = ({ proyecto, onSelectNode }) => {
                     `https://localhost:7251/api/Dependencias/grafo?proyecto=${proyecto}`
                 );
                 const data = await resp.json();
-                console.log("grafo raw:", data);
 
-                // 1) Mapa de nodos
+                // Mapea nodos
                 const nodesMap = new Map();
                 data.nodes.forEach((n) => {
                     if (!n.id) return;
                     nodesMap.set(n.id, {
                         id: n.id,
                         label: n.label || n.id,
+                        tipo: n.tipo || "Otro",
                         inDegree: 0,
-                        outDegree: 0,
-                        isController: /.+Controller$/.test(n.id),
-                        isInterface:
-                            n.id.startsWith("I") && /[A-Z]/.test(n.id.charAt(1)),
-                        isService: n.id.includes("Service"),
-                        isModel:
-                            !n.id.includes("Controller") &&
-                            !n.id.includes("Service") &&
-                            !(
-                                n.id.startsWith("I") &&
-                                /[A-Z]/.test(n.id.charAt(1))
-                            ),
+                        outDegree: 0
                     });
                 });
 
-                // 2) Deduplicar edges a partir de data.links
-                const raw = data.links || [];
+
+                // Deduplica y filtra edges
+                const rawLinks = data.links || [];
                 const unique = Array.from(
-                    new Set(raw.map((e) => `${e.source}|${e.target}`))
+                    new Set(rawLinks.map((e) => `${e.source}|${e.target}`))
                 ).map((key) => {
                     const [source, target] = key.split("|");
                     return { source, target };
                 });
-
-                // 3) Filtrar sólo aquellos con ambos extremos en nodesMap
                 const validEdges = unique.filter(
                     (e) => nodesMap.has(e.source) && nodesMap.has(e.target)
                 );
 
-                // 4) Calcular in/out degree
+                // Calcula grados
                 validEdges.forEach((e) => {
                     nodesMap.get(e.source).outDegree++;
                     nodesMap.get(e.target).inDegree++;
                 });
 
-                // 5) Detectar módulos candidatos
+                // Detecta módulos
                 const modules = identifyModules(
                     Array.from(nodesMap.values()),
                     validEdges
                 );
                 setModulosCandidatos(modules);
 
-                // 6) Enriquecer nodos
+                // Enriquecer nodos
                 const enriched = Array.from(nodesMap.values()).map((node) => ({
                     ...node,
                     instability:
@@ -84,7 +74,7 @@ const GraphContainer = ({ proyecto, onSelectNode }) => {
                     ),
                 }));
 
-                // 7) Poner grafo en estado
+                // Set grafo
                 setGrafo({
                     nodes: enriched,
                     links: validEdges.map((e) => ({
@@ -100,9 +90,44 @@ const GraphContainer = ({ proyecto, onSelectNode }) => {
         obtenerGrafo();
     }, [proyecto]);
 
-    // -------------------
-    // Auxiliares
-    // -------------------
+    // 2) Calcula centros para cada módulo
+    const moduleCenters = useMemo(() => {
+        const centers = {};
+        modulosCandidatos.forEach((m, i) => {
+            const angle = (2 * Math.PI * i) / modulosCandidatos.length;
+            centers[m.id] = {
+                x: Math.cos(angle) * 200,
+                y: Math.sin(angle) * 200,
+            };
+        });
+        return centers;
+    }, [modulosCandidatos]);
+
+    // 3) Ajusta fuerzas de la simulación
+    useEffect(() => {
+        if (!grafo || !graphRef.current) return;
+        const fg = graphRef.current;
+        fg.d3Force("charge", forceManyBody().strength(-50));
+        fg.d3Force("collide", forceCollide().radius(24));
+        fg.d3Force(
+            "x",
+            forceX((node) => moduleCenters[node.moduleId]?.x || 0).strength(0.1)
+        );
+        fg.d3Force(
+            "y",
+            forceY((node) => {
+                switch (node.tipo) {
+                    case "Controller": return -300;
+                    case "Service": return 0;
+                    case "Model": return 300;
+                    default: return 100;
+                }
+            }).strength(0.2)
+
+        );
+    }, [grafo, moduleCenters]);
+
+    // ————— Auxiliares idénticos a los anteriores —————
     const identifyModules = (nodes, edges) => {
         const modules = [];
         const controllers = nodes.filter((n) =>
@@ -130,7 +155,6 @@ const GraphContainer = ({ proyecto, onSelectNode }) => {
         });
         return modules;
     };
-
     const getModuleForNode = (nodeId, modules) => {
         for (const m of modules) {
             if (
@@ -142,7 +166,6 @@ const GraphContainer = ({ proyecto, onSelectNode }) => {
         }
         return null;
     };
-
     const isCandidateForMicroservice = (
         node,
         nodesMap,
@@ -150,9 +173,7 @@ const GraphContainer = ({ proyecto, onSelectNode }) => {
         edges
     ) => {
         if (node.isController) {
-            const mod = modules.find(
-                (m) => m.controllerNode === node.id
-            );
+            const mod = modules.find((m) => m.controllerNode === node.id);
             return mod?.isCohesive && node.inDegree < 3;
         }
         if (node.isService) {
@@ -160,49 +181,43 @@ const GraphContainer = ({ proyecto, onSelectNode }) => {
                 .filter((e) => e.target === node.id)
                 .map((e) => e.source);
             const moduleIds = new Set(
-                users
-                    .map((u) => getModuleForNode(u, modules))
-                    .filter(Boolean)
+                users.map((u) => getModuleForNode(u, modules)).filter(Boolean)
             );
             return moduleIds.size === 1 && node.outDegree < 10;
         }
         return false;
     };
-
     const getNodeColor = (node) => {
         if (highlightNodes.size && !highlightNodes.has(node.id)) {
             return "rgba(180,180,180,0.2)";
         }
-        if (node.isCandidateForExtraction) {
-            return "rgba(46,204,113,0.8)";
+        if (node.isCandidateForExtraction) return "rgba(46,204,113,0.8)";
+        switch (node.tipo) {
+            case "Controller": return "rgba(52,152,219,0.8)";
+            case "Service": return "rgba(155,89,182,0.8)";
+            case "Model": return "rgba(241,196,15,0.8)";
+            case "Interface": return "rgba(230,126,34,0.8)";
+            default: return "rgba(149,165,166,0.8)";
         }
-        if (node.isController) return "rgba(52,152,219,0.8)";
-        if (node.isService) return "rgba(155,89,182,0.8)";
-        if (node.isModel) return "rgba(241,196,15,0.8)";
-        if (node.isInterface) return "rgba(230,126,34,0.8)";
-        return "rgba(149,165,166,0.8)";
     };
 
     const getNodeLabel = (node) => {
-        const metrics = `In: ${node.inDegree}  Out: ${node.outDegree}  Inst: ${node.instability.toFixed(
+        const metrics = `In:${node.inDegree} Out:${node.outDegree} Inst:${node.instability.toFixed(
             2
         )}`;
-        const type = node.isController
-            ? "(C)"
-            : node.isService
-                ? "(S)"
-                : node.isModel
-                    ? "(M)"
-                    : node.isInterface
-                        ? "(I)"
-                        : "";
-        const mod = node.moduleId ? `  Module: ${node.moduleId}` : "";
-        return `${node.label} ${type}\n${metrics}${mod}`;
+        const typeMap = {
+            Controller: "(C)",
+            Service: "(S)",
+            Model: "(M)",
+            Interface: "(I)"
+        };
+        const type = typeMap[node.tipo] || "";
+
+        const mod = node.moduleId ? ` (${node.moduleId})` : "";
+        return `${node.label}${type}\n${metrics}${mod}`;
     };
 
-    // -------------------
-    // Interacciones
-    // -------------------
+    // ————— Interacción —————
     const handleNodeHover = useCallback(
         (node) => {
             if (selectedNode) return;
@@ -226,7 +241,6 @@ const GraphContainer = ({ proyecto, onSelectNode }) => {
         },
         [grafo, selectedNode]
     );
-
     const handleNodeClick = useCallback(
         (node) => {
             if (!grafo) return;
@@ -254,17 +268,14 @@ const GraphContainer = ({ proyecto, onSelectNode }) => {
         },
         [grafo, selectedNode, onSelectNode]
     );
-
     const handleResetView = () => {
-        graphRef.current?.zoomToFit(400);
+        graphRef.current?.zoomToFit(500, 50);
     };
-
     const handleHighlightModule = (modId) => {
         if (!grafo) return;
-        const nodesInMod = grafo.nodes
-            .filter((n) => n.moduleId === modId)
-            .map((n) => n.id);
-        const cn = new Set(nodesInMod);
+        const cn = new Set(
+            grafo.nodes.filter((n) => n.moduleId === modId).map((n) => n.id)
+        );
         const cl = new Set(
             grafo.links.filter((l) => {
                 const s = l.source.id || l.source;
@@ -276,9 +287,7 @@ const GraphContainer = ({ proyecto, onSelectNode }) => {
         setHighlightLinks(cl);
     };
 
-    // -------------------
-    // Render
-    // -------------------
+    // ————— Render —————
     if (!grafo) {
         return (
             <div className="h-[600px] border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center text-gray-400 text-lg font-medium">
@@ -300,7 +309,6 @@ const GraphContainer = ({ proyecto, onSelectNode }) => {
                     Ajustar vista
                 </button>
             </div>
-
             <div className="flex gap-4">
                 <aside className="w-64 border rounded-xl shadow p-4 bg-white">
                     <h4 className="font-medium text-gray-700 mb-3">
@@ -338,35 +346,33 @@ const GraphContainer = ({ proyecto, onSelectNode }) => {
                         })
                     )}
                 </aside>
-
                 <div className="flex-1 relative h-[600px] border rounded-xl shadow bg-white">
-                    <div className="absolute top-4 right-4 z-10 bg-white p-3 rounded shadow-md text-xs">
-                        <div className="font-medium mb-2">Leyenda</div>
-                        <LegendItem color="bg-blue-500" label="Controladores" />
-                        <LegendItem color="bg-purple-500" label="Servicios" />
-                        <LegendItem color="bg-yellow-500" label="Modelos" />
-                        <LegendItem color="bg-orange-500" label="Interfaces" />
-                        <LegendItem color="bg-green-500" label="Candidatos MS" />
-                    </div>
-
                     <ForceGraph2D
                         ref={graphRef}
                         graphData={grafo}
-                        nodeRelSize={8}
+                        d3AlphaDecay={0.02}
+                        d3VelocityDecay={0.5}
+                        linkDistance={120}
+                        linkStrength={0.7}
+                        nodeRelSize={6}
                         nodeVal={(n) => 1 + Math.sqrt(n.inDegree + n.outDegree)}
                         nodeLabel={getNodeLabel}
                         nodeColor={getNodeColor}
-                        linkColor={() => "rgba(127,140,141,0.8)"}
-                        linkWidth={() => 1.5}
+                        linkColor={(link) => {
+                            const s = typeof link.source === 'object' ? link.source.id : link.source;
+                            const t = typeof link.target === 'object' ? link.target.id : link.target;
+
+                            if (s.includes("Controller") && t.includes("Service")) return "rgba(52, 152, 219, 0.8)";
+                            if (s.includes("Service") && t.includes("Model")) return "rgba(155, 89, 182, 0.8)";
+                            return "rgba(127,140,141,0.6)";
+                        }}
+                        linkWidth={1.5}
                         linkDirectionalArrowLength={6}
                         linkDirectionalArrowRelPos={1}
-                        linkDirectionalParticles={(l) =>
-                            highlightLinks.has(l) ? 2 : 0
-                        }
                         onNodeHover={handleNodeHover}
                         onNodeClick={handleNodeClick}
                         cooldownTicks={100}
-                        onEngineStop={() => graphRef.current.zoomToFit(400)}
+                        onEngineStop={() => graphRef.current.zoomToFit(500, 50)}
                         nodeCanvasObject={(node, ctx, scale) => {
                             const r = node.__r;
                             ctx.beginPath();
@@ -378,18 +384,11 @@ const GraphContainer = ({ proyecto, onSelectNode }) => {
                                 ctx.lineWidth = 2;
                                 ctx.stroke();
                             }
-                            if ((scale >= 1.2 || highlightNodes.has(node.id)) && node.label) {
-                                ctx.font = `${12 / scale}px Sans-Serif`;
-                                ctx.textAlign = "center";
-                                ctx.textBaseline = "middle";
-                                ctx.fillStyle = "#000";
-                                let lbl = node.label;
-                                if (node.id.includes("Controller"))
-                                    lbl = node.label.replace("Controller", "");
-                                if (node.id.includes("Service"))
-                                    lbl = node.label.replace("Service", "");
-                                ctx.fillText(lbl, node.x, node.y + r + 7);
-                            }
+                            ctx.font = `${14 / scale}px Sans-Serif`;
+                            ctx.textAlign = "center";
+                            ctx.textBaseline = "middle";
+                            ctx.fillStyle = "#000";
+                            ctx.fillText(getNodeLabel(node), node.x, node.y - r - 7);
                         }}
                     />
                 </div>
@@ -397,12 +396,5 @@ const GraphContainer = ({ proyecto, onSelectNode }) => {
         </div>
     );
 };
-
-const LegendItem = ({ color, label }) => (
-    <div className="flex items-center mb-1">
-        <div className={`w-3 h-3 rounded-full ${color} mr-2`} />
-        <span>{label}</span>
-    </div>
-);
 
 export default GraphContainer;
