@@ -60,10 +60,10 @@ const Sidebar = ({ activePage, onNavigate }) => {
                     <Settings size={20} />
                     {expanded && <span>Configuración</span>}
                 </button>
-                <button className={`flex items-center gap-3 px-4 py-2 w-full hover:bg-slate-700 rounded-lg transition`}>
-                    <HelpCircle size={20} />
-                    {expanded && <span>Ayuda</span>}
-                </button>
+                {/*<button className={`flex items-center gap-3 px-4 py-2 w-full hover:bg-slate-700 rounded-lg transition`}>*/}
+                {/*    <HelpCircle size={20} />*/}
+                {/*    {expanded && <span>Ayuda</span>}*/}
+                {/*</button>*/}
             </div>
         </aside>
     );

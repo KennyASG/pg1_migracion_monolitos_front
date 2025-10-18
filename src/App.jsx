@@ -2,6 +2,7 @@ import { useState } from "react";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import Home from "./pages/Home";
+import Extraccion from "./pages/Extraccion";
 import ProjectInput from "./components/ProjectInput";
 
 function App() {
@@ -72,7 +73,6 @@ function App() {
                                         Basado en el análisis de dependencias, aquí se presentan los módulos candidatos
                                         a ser convertidos en microservicios independientes.
                                     </p>
-                                    {/* Componente de candidatos a microservicios */}
                                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-gray-500">
                                         Función en desarrollo - Próximamente disponible
                                     </div>
@@ -88,24 +88,16 @@ function App() {
                             <h2 className="text-xl font-semibold text-slate-700 mb-4">Extracción de Microservicios</h2>
                             {!proyectoProcesado ? (
                                 <div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-lg">
-                                    <p>Primero debes cargar y procesar un proyecto, y seleccionar candidatos para la extracción.</p>
+                                    <p>Primero debes cargar y procesar un proyecto para la extracción.</p>
                                     <button
                                         className="mt-2 text-white bg-amber-600 hover:bg-amber-700 px-4 py-2 rounded-md"
-                                        onClick={() => setActivePage("home")}
+                                        onClick={() => setActivePage("projects")}
                                     >
                                         Ir a cargar proyecto
                                     </button>
                                 </div>
                             ) : (
-                                <div>
-                                    <p className="text-gray-600 mb-4">
-                                        Inicia el proceso de extracción de los módulos seleccionados como microservicios independientes.
-                                    </p>
-                                    {/* Componente de extracción */}
-                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-gray-500">
-                                        Función en desarrollo - Próximamente disponible
-                                    </div>
-                                </div>
+                                <Extraccion proyectoProcesado={proyectoProcesado} />
                             )}
                         </div>
                     </div>
@@ -129,5 +121,3 @@ function App() {
 }
 
 export default App;
-
-
