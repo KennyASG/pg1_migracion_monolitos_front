@@ -1,71 +1,79 @@
-import { Home, FolderOpen, GitBranch, GitMerge, Box, Settings, HelpCircle, Container  } from "lucide-react";
-import { useState } from "react";
+import { FileBox, GitBranch, PackageOpen, Boxes } from "lucide-react";
 
-const Sidebar = ({ activePage, onNavigate }) => {
-    const [expanded, setExpanded] = useState(true);
-
-    const menuItems = [
-        { id: "home", label: "Inicio", icon: Home },
-        { id: "projects", label: "Proyectos", icon: FolderOpen },
-        { id: "dependencies", label: "Dependencias", icon: GitBranch },
-        { id: "microservices", label: "Microservicios", icon: Box },
-        { id: "extract", label: "Extracción", icon: GitMerge },
+const Sidebar = ({ activePage, onNavigate, proyectoCargado }) => {
+    const steps = [
+        {
+            id: "project",
+            label: "1. Proyecto",
+            icon: FileBox,
+            description: "Cargar proyecto",
+            enabled: true
+        },
+        {
+            id: "dependencies",
+            label: "2. Dependencias",
+            icon: GitBranch,
+            description: "Analizar dependencias",
+            enabled: proyectoCargado
+        },
+        {
+            id: "extraction",
+            label: "3. Extracción",
+            icon: PackageOpen,
+            description: "Extraer módulos",
+            enabled: proyectoCargado
+        },
+        {
+            id: "microservices",
+            label: "4. Microservicios",
+            icon: Boxes,
+            description: "Generar microservicios",
+            enabled: proyectoCargado
+        }
     ];
 
-    const handleClick = (id) => {
-        if (onNavigate) {
-            onNavigate(id);
-        }
-    };
-
     return (
-        <aside className={`${expanded ? 'w-64' : 'w-20'} bg-slate-800 text-white h-screen p-4 transition-all duration-300 `}>
-            <div className="flex items-start mb-8 justify-between">
-                <Container size={30} className="mt-3" />
-                <h2 className={`text-lg font-bold mr-20 py-4 ${expanded ? 'block' : 'hidden'}`}>Menú</h2>
-                <button
-                    className="p-1 mt-3 rounded-md hover:bg-slate-700 transition"
-                    onClick={() => setExpanded(!expanded)}
-                >
-                    {expanded ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M15 18l-6-6 6-6" />
-                        </svg>
-                    ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M9 18l6-6-6-6" />
-                        </svg>
-                    )}
-                </button>
+        <div className="w-64 bg-slate-800 text-white flex flex-col">
+            <div className="p-6 border-b border-slate-700">
+                <h1 className="text-xl font-bold">Migración a Microservicios</h1>
+                <p className="text-xs text-slate-400 mt-1">Sistema de transformación</p>
             </div>
 
-            <nav className="flex flex-col gap-2">
-                {menuItems.map((item) => (
-                    <button
-                        key={item.id}
-                        onClick={() => handleClick(item.id)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                            activePage === item.id ? 'bg-indigo-600 text-white' : 'hover:bg-slate-700'
-                        }`}
-                    >
-                        <item.icon size={20} />
-                        {expanded && <span>{item.label}</span>}
-                    </button>
-                ))}
+            <nav className="flex-1 p-4">
+                <div className="space-y-2">
+                    {steps.map((step, index) => {
+                        const Icon = step.icon;
+                        const isActive = activePage === step.id;
+                        const isDisabled = !step.enabled;
+
+                        return (
+                            <button
+                                key={step.id}
+                                onClick={() => step.enabled && onNavigate(step.id)}
+                                disabled={isDisabled}
+                                className={`w-full text-left p-3 transition-colors flex items-start gap-3 ${
+                                    isActive
+                                        ? "bg-slate-700 text-white"
+                                        : isDisabled
+                                            ? "text-slate-500 cursor-not-allowed"
+                                            : "text-slate-300 hover:bg-slate-700/50"
+                                }`}
+                            >
+                                <Icon size={20} className="mt-0.5 flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-sm">{step.label}</div>
+                                    <div className="text-xs opacity-75 truncate">{step.description}</div>
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
             </nav>
 
-            <div className="mt-auto mb-4">
-                <div className="border-t border-slate-700 my-4"></div>
-                <button className={`flex items-center gap-3 px-4 py-2 w-full hover:bg-slate-700 rounded-lg transition`}>
-                    <Settings size={20} />
-                    {expanded && <span>Configuración</span>}
-                </button>
-                {/*<button className={`flex items-center gap-3 px-4 py-2 w-full hover:bg-slate-700 rounded-lg transition`}>*/}
-                {/*    <HelpCircle size={20} />*/}
-                {/*    {expanded && <span>Ayuda</span>}*/}
-                {/*</button>*/}
+            <div className="p-4 border-t border-slate-700 text-xs text-slate-400">
+                <p>© 2025 PG1 Migration Tool</p>
             </div>
-        </aside>
+        </div>
     );
 };
 
