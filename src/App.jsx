@@ -4,6 +4,7 @@ import Sidebar from "./components/Sidebar";
 import ProjectInput from "./components/ProjectInput";
 import TablaDependencias from "./components/TablaDependencias";
 import Extraccion from "./pages/Extraccion";
+import Microservicios from "./pages/Microservicios";
 import { ToastProvider } from "./components/ToastProvider";
 
 function App() {
@@ -161,7 +162,7 @@ function App() {
                                     Paso 4: Generación de Microservicios
                                 </h2>
                                 <p className="text-slate-600 mb-6">
-                                    Genera y configura los microservicios extraídos
+                                    Conteneriza y despliega los microservicios extraídos
                                 </p>
 
                                 {!proyectoProcesado ? (
@@ -176,10 +177,7 @@ function App() {
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="bg-slate-50 border border-slate-200 p-6 text-center text-slate-600">
-                                        <p className="font-medium mb-2">Funcionalidad en desarrollo</p>
-                                        <p className="text-sm">Próximamente disponible</p>
-                                    </div>
+                                    <Microservicios proyectoProcesado={proyectoProcesado} />
                                 )}
                             </div>
                         </div>
