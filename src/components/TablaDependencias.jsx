@@ -251,7 +251,7 @@ const TablaDependencias = ({ proyecto, onSeleccionarCandidato }) => {
                             onClick={() => setVistaAgrupada(!vistaAgrupada)}
                             className={`px-3 py-2 rounded-lg border ${vistaAgrupada ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-300'}`}
                         >
-                            {vistaAgrupada ? '🔍 Vista de módulos' : '🔢 Vista de dependencias'}
+                            {vistaAgrupada ? 'Vista de módulos' : 'Vista de dependencias'}
                         </button>
                         {moduloSeleccionado && (
                             <button

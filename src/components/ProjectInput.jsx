@@ -1,151 +1,134 @@
-import { useRef, useState } from "react";
-import { FolderOpen, Upload, Loader2, AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { Upload, Loader2 } from "lucide-react";
+import { useToast } from "./ToastProvider";
 
 const ProjectInput = ({ projectName, setProjectName, onSuccess }) => {
-    const fileInputRef = useRef();
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [fileName, setFileName] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState("");
+    const [file, setFile] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const { addToast } = useToast();
 
     const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const name = file.name.toLowerCase();
-
-            if (name.endsWith(".zip") || name.endsWith(".csproj")) {
-                setSelectedFile(file);
-                setFileName(file.name);
-                setError("");
-
-
-                if (name.endsWith(".zip")) {
-                    const baseName = file.name.replace(/\.zip$/i, "");
-                    setProjectName(baseName);
-                }
-            } else {
-                setError("Solo se permiten archivos .zip o .csproj");
-                setSelectedFile(null);
-                setFileName("");
+        const selectedFile = e.target.files[0];
+        if (selectedFile) {
+            if (!selectedFile.name.endsWith('.zip')) {
+                addToast('Por favor selecciona un archivo .zip', 'error');
+                return;
             }
+            setFile(selectedFile);
+            setProjectName(selectedFile.name.replace('.zip', ''));
         }
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
         if (!projectName) {
-            setError("Debes ingresar el nombre del proyecto");
+            addToast('Debes ingresar el nombre del proyecto', 'warning');
             return;
         }
 
-        if (!selectedFile) {
-            setError("Debes seleccionar un archivo");
+        if (!file) {
+            addToast('Debes seleccionar un archivo', 'warning');
             return;
         }
 
-        setIsLoading(true);
-        setError("");
+        setLoading(true);
+
+        const formData = new FormData();
+        formData.append("ProjectName", projectName);
+        formData.append("File", file);
 
         try {
-            const formData = new FormData();
-            formData.append("ProjectName", projectName);
-            formData.append("File", selectedFile);
-
-            const uploadResponse = await fetch("https://localhost:7251/api/Archivo/upload", {
+            const response = await fetch("https://localhost:7251/api/Archivo/upload", {
                 method: "POST",
                 body: formData,
             });
 
-            if (!uploadResponse.ok) {
-                throw new Error("Error al subir el archivo");
+            if (response.ok) {
+                const result = await response.json();
+                addToast(
+                    result.message || 'Archivo recibido y análisis completado',
+                    'success',
+                    4000,
+                    () => {
+                        if (onSuccess) onSuccess();
+                    }
+                );
+            } else {
+                const errorText = await response.text();
+                addToast(`Error: ${errorText}`, 'error');
             }
-
-            const result = await uploadResponse.json();
-            alert("✅ Subido: " + result.message);
-            if (onSuccess) onSuccess();
-
         } catch (error) {
-            console.error("Error:", error);
-            setError(error.message || "Ocurrió un error al subir el archivo");
+            addToast('Error de conexión con el servidor', 'error');
+            console.error(error);
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
     return (
-        <div className="mb-6 bg-white p-6 rounded-xl shadow-md">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">Cargar Proyecto Monolítico</h2>
-
-            <div className="flex flex-col gap-4">
-                <div>
-                    <label htmlFor="projectName" className="block text-sm font-medium text-gray-700 mb-1">
-                        Nombre del Proyecto
-                    </label>
-                    <input
-                        id="projectName"
-                        type="text"
-                        placeholder="Ej: Sistema de Gestión Bancaria"
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                        value={projectName}
-                        onChange={(e) => setProjectName(e.target.value)}
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Archivo del Proyecto (.zip o .csproj)
-                    </label>
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            className="flex items-center gap-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-lg transition"
-                            onClick={() => fileInputRef.current?.click()}
-                        >
-                            <FolderOpen size={18} />
-                            Seleccionar Archivo
-                        </button>
-                        {fileName && (
-                            <span className="text-sm text-gray-600 truncate max-w-xs">
-                                {fileName}
-                            </span>
-                        )}
-                        <input
-                            type="file"
-                            accept=".zip,.csproj"
-                            className="hidden"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                        />
-                    </div>
-                </div>
-
-                {error && (
-                    <div className="text-red-500 text-sm flex items-center gap-1">
-                        <AlertTriangle size={16} />
-                        {error}
-                    </div>
-                )}
-
-                <button
-                    onClick={handleSubmit}
-                    disabled={isLoading}
-                    className={`flex items-center justify-center gap-2 
-                              ${isLoading ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'} 
-                              text-white font-medium px-6 py-3 rounded-lg transition shadow-md w-full mt-2`}
-                >
-                    {isLoading ? (
-                        <>
-                            <Loader2 size={18} className="animate-spin" />
-                            Procesando...
-                        </>
-                    ) : (
-                        <>
-                            <Upload size={18} />
-                            Subir y Analizar Proyecto
-                        </>
-                    )}
-                </button>
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Nombre del Proyecto
+                </label>
+                <input
+                    type="text"
+                    placeholder="Ej: MonolithPro"
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    disabled={loading}
+                    className="w-full p-3 border border-slate-300 bg-white text-slate-800 focus:outline-none focus:border-slate-500"
+                />
             </div>
-        </div>
+
+            <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Archivo del proyecto (.zip)
+                </label>
+                <div className="relative">
+                    <input
+                        type="file"
+                        accept=".zip"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        id="file-upload"
+                        disabled={loading}
+                    />
+                    <label
+                        htmlFor="file-upload"
+                        className={`flex items-center gap-3 p-4 border-2 border-dashed border-slate-300 
+                            bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors ${
+                            loading ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                    >
+                        <Upload size={20} className="text-slate-600" />
+                        <span className="text-sm text-slate-600">
+                            {file ? file.name : 'Seleccionar archivo...'}
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <button
+                type="submit"
+                disabled={loading || !file || !projectName}
+                className={`w-full py-3 px-4 font-medium text-white transition-colors flex items-center justify-center gap-2 ${
+                    loading || !file || !projectName
+                        ? 'bg-slate-400 cursor-not-allowed'
+                        : 'bg-slate-800 hover:bg-slate-700'
+                }`}
+            >
+                {loading ? (
+                    <>
+                        <Loader2 size={18} className="animate-spin" />
+                        <span>Procesando...</span>
+                    </>
+                ) : (
+                    <span>Cargar y Analizar</span>
+                )}
+            </button>
+        </form>
     );
 };
 

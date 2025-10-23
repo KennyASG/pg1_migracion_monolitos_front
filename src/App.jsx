@@ -4,6 +4,7 @@ import Sidebar from "./components/Sidebar";
 import ProjectInput from "./components/ProjectInput";
 import TablaDependencias from "./components/TablaDependencias";
 import Extraccion from "./pages/Extraccion";
+import { ToastProvider } from "./components/ToastProvider";
 
 function App() {
     const [activePage, setActivePage] = useState("project");
@@ -191,19 +192,21 @@ function App() {
     };
 
     return (
-        <div className="flex h-screen bg-slate-50">
-            <Sidebar
-                activePage={activePage}
-                onNavigate={handleNavigate}
-                proyectoCargado={!!proyectoProcesado}
-            />
-            <div className="flex flex-col flex-1">
-                <Navbar projectName={proyectoProcesado} />
-                <main className="overflow-y-auto flex-1">
-                    {renderContent()}
-                </main>
+        <ToastProvider>
+            <div className="flex h-screen bg-slate-50">
+                <Sidebar
+                    activePage={activePage}
+                    onNavigate={handleNavigate}
+                    proyectoCargado={!!proyectoProcesado}
+                />
+                <div className="flex flex-col flex-1">
+                    <Navbar projectName={proyectoProcesado} />
+                    <main className="overflow-y-auto flex-1">
+                        {renderContent()}
+                    </main>
+                </div>
             </div>
-        </div>
+        </ToastProvider>
     );
 }
 
