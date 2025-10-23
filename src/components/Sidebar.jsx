@@ -71,7 +71,7 @@ const Sidebar = ({ activePage, onNavigate, proyectoCargado }) => {
             </nav>
 
             <div className="p-4 border-t border-slate-700 text-xs text-slate-400">
-                <p>© 2025 PG1 Migration Tool</p>
+                <p>© 2025 PG1 Plataforma de Migración</p>
             </div>
         </div>
     );

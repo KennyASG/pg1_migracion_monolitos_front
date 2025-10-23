@@ -6,7 +6,7 @@ const Navbar = ({ projectName }) => {
                     M
                 </div>
                 <div>
-                    <h1 className="text-lg font-bold text-slate-800">Migration Tool</h1>
+                    <h1 className="text-lg font-bold text-slate-800">Plataforma de Migración</h1>
                     {projectName && (
                         <p className="text-xs text-slate-500">
                             Proyecto: <span className="font-medium text-slate-700">{projectName}</span>
