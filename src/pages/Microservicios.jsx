@@ -29,7 +29,7 @@ const Microservicios = ({ proyectoProcesado, rutaMicroservicio, moduloGenerado }
             const result = await containerizationApi.buildMicroservicio(
                 proyectoProcesado,
                 selectedModule,
-                rutaMicroservicio || `C:\\Users\\feksaenz\\Documents\\PGI_Migracion_Monolitos\\TransformadorService\\MicroserviciosGenerados\\${selectedModule}`
+                rutaMicroservicio || `/Users/kennysaenz/RiderProjects/PGI_Migracion_Monolitos/TransformadorService/MicroserviciosGenerados/${selectedModule}`
             );
             
             setBuildResult(result);
